@@ -1,0 +1,708 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Financeira HP 12C</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+            touch-action: manipulation;
+        }
+        .lcd-display {
+            font-family: 'VT323', monospace;
+            background-color: #c2cbaa;
+            color: #1a2414;
+            text-shadow: 0 0 1px rgba(0,0,0,0.2);
+            box-shadow: inset 0 3px 8px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .hp-body {
+            background: linear-gradient(180deg, #2b2927 0%, #1a1918 100%);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.1);
+            border: 1px solid #3a3735;
+        }
+        .hp-plate {
+            background: linear-gradient(180deg, #d4af37 0%, #aa820a 50%, #785a00 100%);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.4);
+        }
+        .key-btn {
+            background: linear-gradient(180deg, #383533 0%, #22201f 100%);
+            box-shadow: 0 4px 0 #11100f, 0 5px 6px rgba(0,0,0,0.6);
+            transition: all 0.05s ease;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .key-btn:active, .key-btn.active-key {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #11100f, 0 2px 3px rgba(0,0,0,0.8);
+        }
+        .key-f {
+            background: linear-gradient(180deg, #e67e22 0%, #d35400 100%) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 0 #8e3800, 0 5px 6px rgba(0,0,0,0.6) !important;
+        }
+        .key-f:active, .key-f.active-key {
+            box-shadow: 0 1px 0 #8e3800, 0 2px 3px rgba(0,0,0,0.8) !important;
+        }
+        .key-g {
+            background: linear-gradient(180deg, #2980b9 0%, #1f618d 100%) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 0 #154360, 0 5px 6px rgba(0,0,0,0.6) !important;
+        }
+        .key-g:active, .key-g.active-key {
+            box-shadow: 0 1px 0 #154360, 0 2px 3px rgba(0,0,0,0.8) !important;
+        }
+        .key-enter {
+            background: linear-gradient(180deg, #4a4744 0%, #2d2b29 100%) !important;
+        }
+        .gold-text { color: #f39c12; }
+        .blue-text { color: #3498db; }
+        .white-text { color: #ffffff; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-2 sm:p-4">
+
+    <div class="hp-body w-full max-w-xl rounded-xl p-3 sm:p-5 text-gray-200 shadow-2xl relative select-none">
+        <!-- Placa da Marca -->
+        <div class="hp-plate rounded-t-md p-2 mb-3 flex justify-between items-center text-black font-bold tracking-wider">
+            <span class="text-xs sm:text-sm tracking-widest uppercase opacity-90">Hewlett · Packard</span>
+            <span class="text-sm sm:text-base font-extrabold tracking-widest">12C</span>
+        </div>
+
+        <!-- Visor LCD -->
+        <div class="bg-black/40 p-2 sm:p-3 rounded-md mb-4 border border-gray-800">
+            <div class="lcd-display rounded p-2 sm:p-3 relative h-16 sm:h-20 flex flex-col justify-between">
+                <!-- Indicadores de Estado -->
+                <div class="flex justify-between text-[10px] sm:text-xs font-mono tracking-wider h-3 font-bold">
+                    <span id="ind-f" class="opacity-0">f</span>
+                    <span id="ind-g" class="opacity-0">g</span>
+                    <span id="ind-beg" class="opacity-0">BEGIN</span>
+                    <span id="ind-dmy" class="opacity-0">D.MY</span>
+                    <span id="ind-c" class="opacity-0">C</span>
+                    <span id="ind-prgm" class="opacity-0">PRGM</span>
+                </div>
+                <!-- Visor Numérico LCD -->
+                <div id="display" class="text-right text-2xl sm:text-4xl font-bold tracking-widest overflow-hidden whitespace-nowrap">
+                    0.00
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid do Teclado Real HP 12C (10 Colunas x 4 Linhas) -->
+        <div class="grid grid-cols-10 gap-1 sm:gap-2">
+
+            <!-- LINHA 1 (Funções Financeiras / Calendário / Números Superiores) -->
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">AMORT</span>
+                <button onclick="pressKey('n')" id="btn-n" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">n</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">12×</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">INT</span>
+                <button onclick="pressKey('i')" id="btn-i" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">i</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">12÷</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">NPV</span>
+                <button onclick="pressKey('PV')" id="btn-PV" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">PV</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">CF0</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">RND</span>
+                <button onclick="pressKey('PMT')" id="btn-PMT" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">PMT</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">CFj</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">IRR</span>
+                <button onclick="pressKey('FV')" id="btn-FV" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">FV</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">Nj</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">PRICE</span>
+                <button onclick="pressKey('CHS')" id="btn-CHS" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">CHS</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">DATE</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">YTM</span>
+                <button onclick="pressKey('7')" id="btn-7" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">7</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">BEG</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">SL</span>
+                <button onclick="pressKey('8')" id="btn-8" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">8</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">END</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">SOYD</span>
+                <button onclick="pressKey('9')" id="btn-9" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">9</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">MEM</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">DB</span>
+                <button onclick="pressKey('/')" id="btn-div" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">÷</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+            </div>
+
+            <!-- LINHA 2 (Funções Matemáticas / Números Meio) -->
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">y<sup>x</sup></span>
+                <button onclick="pressKey('Y_X')" id="btn-Y_X" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">y<sup>x</sup></button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">√x</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">1/x</span>
+                <button onclick="pressKey('INV_X')" id="btn-INV_X" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">1/x</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">e<sup>x</sup></span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">%T</span>
+                <button onclick="pressKey('PCT_T')" id="btn-PCT_T" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">%T</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">LN</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">Δ%</span>
+                <button onclick="pressKey('DELTA_PCT')" id="btn-DELTA_PCT" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">Δ%</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">FRAC</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">%</span>
+                <button onclick="pressKey('PCT')" id="btn-PCT" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">%</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">INTG</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">EEX</span>
+                <button onclick="pressKey('EEX')" id="btn-EEX" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">EEX</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">ΔDYS</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+                <button onclick="pressKey('4')" id="btn-4" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">4</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">D.MY</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+                <button onclick="pressKey('5')" id="btn-5" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">5</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">M.DY</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+                <button onclick="pressKey('6')" id="btn-6" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">6</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">X<sub>W</sub></span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+                <button onclick="pressKey('*')" id="btn-mul" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">×</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+            </div>
+
+            <!-- LINHA 3 (Controle de Pilha / RPN / Modificadores / Operadores) -->
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">P/R</span>
+                <button onclick="pressKey('RS')" id="btn-RS" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">R/S</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">PSE</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">PRGM</span>
+                <button onclick="pressKey('SST')" id="btn-SST" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">SST</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">BST</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">CLEAR</span>
+                <button onclick="pressKey('SWAP')" id="btn-SWAP" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">x≷y</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">GTO</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">PREFIX</span>
+                <button onclick="pressKey('RDN')" id="btn-RDN" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">R↓</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">x≤y</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+                <button onclick="pressKey('f')" id="btn-f" class="key-btn key-f w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold">f</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+                <button onclick="pressKey('g')" id="btn-g" class="key-btn key-g w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold">g</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+                <button onclick="pressKey('1')" id="btn-1" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">1</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">x=0</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+                <button onclick="pressKey('2')" id="btn-2" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">2</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">x&lt;0</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+                <button onclick="pressKey('3')" id="btn-3" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">3</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">x&gt;0</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+                <button onclick="pressKey('-')" id="btn-sub" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">-</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+            </div>
+
+            <!-- LINHA 4 (ENTER de Destaque, ON, STO, RCL, CLx, Números Base e Adição) -->
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">REG</span>
+                <button onclick="pressKey('STO')" id="btn-STO" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">STO</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">FIN</span>
+                <button onclick="pressKey('RCL')" id="btn-RCL" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">RCL</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+            </div>
+            <!-- ENTER Tecla Alta -->
+            <div class="col-span-2 flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold">LST x</span>
+                <button onclick="pressKey('ENTER')" id="btn-ENTER" class="key-btn key-enter w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">ENTER</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+                <button onclick="pressKey('CLX')" id="btn-CLX" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">CLx</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+                <button onclick="pressKey('0')" id="btn-0" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">0</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">x̄</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+                <button onclick="pressKey('.')" id="btn-DOT" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">.</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">s</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+                <button onclick="pressKey('SIGMA_PLUS')" id="btn-SIGMA_PLUS" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">Σ+</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold">Σ-</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+                <button onclick="pressKey('+')" id="btn-add" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">+</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="gold-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+                <button onclick="pressKey('ON')" id="btn-ON" class="key-btn w-full h-10 sm:h-12 rounded text-xs sm:text-sm font-bold white-text">ON</button>
+                <span class="blue-text text-[9px] sm:text-[11px] h-3 font-semibold"></span>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Guia Rápido de Atalhos -->
+    <div class="mt-4 text-xs text-gray-400 text-center max-w-lg">
+        <p class="font-semibold text-gray-300">Teclas de Atalho do Teclado Físico:</p>
+        <p><span class="text-amber-400">0-9</span> Números | <span class="text-amber-400">Enter</span> ENTER | <span class="text-amber-400">Backspace</span> CLx | <span class="text-amber-400">f / g</span> Modificadores</p>
+        <p><span class="text-amber-400">n</span> n | <span class="text-amber-400">i</span> i | <span class="text-amber-400">p</span> PV | <span class="text-amber-400">m</span> PMT | <span class="text-amber-400">v</span> FV | <span class="text-amber-400">c</span> CHS</p>
+    </div>
+
+    <script>
+        // --- Web Audio API para Som de Clique ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBeep() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.04);
+            } catch (e) {}
+            if (navigator.vibrate) navigator.vibrate(8);
+        }
+
+        // --- Estado do Motor da HP 12C ---
+        let stack = [0, 0, 0, 0]; // Registradores X, Y, Z, T
+        let lastX = 0;
+        let registers = new Array(20).fill(0);
+        let tvm = { n: 0, i: 0, pv: 0, pmt: 0, fv: 0 };
+        let cashFlows = []; // Array de { value, count }
+
+        let displayStr = "0.";
+        let enteringNumber = false;
+        let liftEnabled = true; // Flag de Stack Lift do RPN
+        let fMode = false;
+        let gMode = false;
+        let stoMode = false;
+        let rclMode = false;
+        let decimals = 2;
+        let beginMode = false; // false = END, true = BEG
+        let dmyMode = false;   // false = M.DY, true = D.MY
+
+        function updateIndicators() {
+            document.getElementById('ind-f').style.opacity = fMode ? '1' : '0';
+            document.getElementById('ind-g').style.opacity = gMode ? '1' : '0';
+            document.getElementById('ind-beg').style.opacity = beginMode ? '1' : '0';
+            document.getElementById('ind-dmy').style.opacity = dmyMode ? '1' : '0';
+        }
+
+        function renderDisplay(val = null) {
+            const disp = document.getElementById('display');
+            if (val !== null) {
+                if (typeof val === 'number') {
+                    if (isNaN(val) || !isFinite(val)) {
+                        disp.innerText = "Error 5";
+                        return;
+                    }
+                    disp.innerText = val.toLocaleString('en-US', {
+                        minimumFractionDigits: decimals,
+                        maximumFractionDigits: decimals
+                    });
+                } else {
+                    disp.innerText = val;
+                }
+            } else {
+                disp.innerText = displayStr;
+            }
+        }
+
+        function pushStack(val) {
+            stack[3] = stack[2];
+            stack[2] = stack[1];
+            stack[1] = stack[0];
+            stack[0] = val;
+        }
+
+        function dropStack() {
+            const x = stack[0];
+            stack[0] = stack[1];
+            stack[1] = stack[2];
+            stack[2] = stack[3];
+            return x;
+        }
+
+        function pressKey(key) {
+            playBeep();
+
+            // Ativação visual momentânea no teclado
+            let btn = document.getElementById('btn-' + key);
+            if (btn) {
+                btn.classList.add('active-key');
+                setTimeout(() => btn.classList.remove('active-key'), 100);
+            }
+
+            // Alternar Modificadores f e g
+            if (key === 'f') {
+                fMode = !fMode; gMode = false;
+                updateIndicators(); return;
+            }
+            if (key === 'g') {
+                gMode = !gMode; fMode = false;
+                updateIndicators(); return;
+            }
+
+            // --- Gerenciamento de STO e RCL ---
+            if (stoMode) {
+                stoMode = false;
+                let regIdx = parseInt(key);
+                if (!isNaN(regIdx)) registers[regIdx] = stack[0];
+                return;
+            }
+            if (rclMode) {
+                rclMode = false;
+                let regIdx = parseInt(key);
+                if (!isNaN(regIdx)) {
+                    if (liftEnabled) pushStack(registers[regIdx]);
+                    else stack[0] = registers[regIdx];
+                    displayStr = stack[0].toString();
+                    enteringNumber = false;
+                    liftEnabled = true;
+                    renderDisplay(stack[0]);
+                }
+                return;
+            }
+            if (key === 'STO') { stoMode = true; return; }
+            if (key === 'RCL') { rclMode = true; return; }
+
+            // --- ENTRADA DE DÍGITOS E PONTO DE DECIMAL ---
+            if ((key >= '0' && key <= '9') || key === '.') {
+                if (fMode) {
+                    // Ajuste de Casas Decimais (f 0 a f 9)
+                    let d = parseInt(key);
+                    if (!isNaN(d)) decimals = d;
+                    fMode = false;
+                    updateIndicators();
+                    renderDisplay(stack[0]);
+                    return;
+                }
+
+                if (gMode) {
+                    if (key === '7') { beginMode = true; }  // g BEG
+                    if (key === '8') { beginMode = false; } // g END
+                    if (key === '9') { dmyMode = false; }   // g M.DY
+                    if (key === '.') { dmyMode = true; }    // g D.MY
+                    gMode = false;
+                    updateIndicators();
+                    return;
+                }
+
+                if (!enteringNumber) {
+                    if (liftEnabled) pushStack(0);
+                    displayStr = (key === '.') ? "0." : key;
+                    enteringNumber = true;
+                    liftEnabled = true;
+                } else {
+                    if (key === '.' && displayStr.includes('.')) return;
+                    displayStr += key;
+                }
+                stack[0] = parseFloat(displayStr);
+                renderDisplay();
+                return;
+            }
+
+            // Ações de Funções encerram a digitação corrente
+            let isTyping = enteringNumber;
+            enteringNumber = false;
+
+            // ENTER (Duplica X e desativa lift para a próxima entrada)
+            if (key === 'ENTER') {
+                pushStack(stack[0]);
+                liftEnabled = false;
+                renderDisplay(stack[0]);
+                return;
+            }
+
+            // CHS (Troca de Sinal)
+            if (key === 'CHS') {
+                stack[0] = -stack[0];
+                displayStr = stack[0].toString();
+                renderDisplay(stack[0]);
+                return;
+            }
+
+            // CLX / Clear FIN / Clear REG
+            if (key === 'CLX') {
+                if (fMode) {
+                    // f FIN (Limpa registradores financeiros e fluxos)
+                    tvm = { n: 0, i: 0, pv: 0, pmt: 0, fv: 0 };
+                    cashFlows = [];
+                    fMode = false;
+                    updateIndicators();
+                } else if (gMode) {
+                    // g REG (Limpa todos os registradores)
+                    registers.fill(0);
+                    cashFlows = [];
+                    gMode = false;
+                    updateIndicators();
+                }
+                stack[0] = 0;
+                displayStr = "0.";
+                renderDisplay(0);
+                return;
+            }
+
+            // Operadores Aritméticos Básicos (+, -, *, /)
+            if (['+', '-', '*', '/'].includes(key)) {
+                lastX = stack[0];
+                let y = dropStack();
+                let x = stack[0];
+                let res = 0;
+                if (key === '+') res = y + x;
+                if (key === '-') res = y - x;
+                if (key === '*') res = y * x;
+                if (key === '/') res = x !== 0 ? y / x : NaN;
+                stack[0] = res;
+                liftEnabled = true;
+                renderDisplay(res);
+                return;
+            }
+
+            // Porcentagens (Mantém Y na pilha conforme regra original)
+            if (key === 'PCT') { // %
+                lastX = stack[0];
+                stack[0] = stack[1] * (stack[0] / 100);
+                liftEnabled = true;
+                renderDisplay(stack[0]);
+                return;
+            }
+
+            // --- REGISTRADORES E RESOLUÇÃO TVM (n, i, PV, PMT, FV) ---
+            if (['n', 'i', 'PV', 'PMT', 'FV'].includes(key)) {
+                if (fMode) {
+                    if (key === 'n') { // AMORT
+                        let interest = stack[0] * (tvm.i / 100);
+                        let principal = tvm.pmt - interest;
+                        stack[0] = interest;
+                        pushStack(principal);
+                    } else if (key === 'PV') { // NPV
+                        let rate = tvm.i / 100;
+                        let npv = tvm.pv;
+                        let t = 1;
+                        for (let cf of cashFlows) {
+                            for (let k = 0; k < cf.count; k++) {
+                                npv += cf.value / Math.pow(1 + rate, t);
+                                t++;
+                            }
+                        }
+                        stack[0] = npv;
+                        renderDisplay(npv);
+                    } else if (key === 'FV') { // IRR
+                        let irr = 0.1;
+                        for (let iter = 0; iter < 100; iter++) {
+                            let npv = tvm.pv;
+                            let dnpv = 0;
+                            let t = 1;
+                            for (let cf of cashFlows) {
+                                for (let k = 0; k < cf.count; k++) {
+                                    npv += cf.value / Math.pow(1 + irr, t);
+                                    dnpv -= (t * cf.value) / Math.pow(1 + irr, t + 1);
+                                    t++;
+                                }
+                            }
+                            let nextIrr = irr - npv / dnpv;
+                            if (Math.abs(nextIrr - irr) < 1e-6) break;
+                            irr = nextIrr;
+                        }
+                        tvm.i = irr * 100;
+                        stack[0] = tvm.i;
+                        renderDisplay(tvm.i);
+                    }
+                    fMode = false;
+                    updateIndicators();
+                    return;
+                }
+
+                if (gMode) {
+                    if (key === 'n') { stack[0] = stack[0] * 12; tvm.n = stack[0]; } // 12*
+                    if (key === 'i') { stack[0] = stack[0] / 12; tvm.i = stack[0]; } // 12/
+                    if (key === 'PV') { cashFlows = [{ value: stack[0], count: 1 }]; tvm.pv = stack[0]; } // CF0
+                    if (key === 'PMT') { cashFlows.push({ value: stack[0], count: 1 }); } // CFj
+                    if (key === 'FV') { if (cashFlows.length > 0) cashFlows[cashFlows.length - 1].count = stack[0]; } // Nj
+                    gMode = false;
+                    updateIndicators();
+                    renderDisplay(stack[0]);
+                    return;
+                }
+
+                // Se o usuário digitou um número, ARMAZENA no registrador TVM correspondente
+                if (isTyping) {
+                    if (key === 'n') tvm.n = stack[0];
+                    if (key === 'i') tvm.i = stack[0];
+                    if (key === 'PV') tvm.pv = stack[0];
+                    if (key === 'PMT') tvm.pmt = stack[0];
+                    if (key === 'FV') tvm.fv = stack[0];
+                    renderDisplay(stack[0]);
+                } else {
+                    // Se a tecla TVM foi pressionada sem digitar número, RESOLVE a variável ausente
+                    let r = tvm.i / 100;
+                    let S = beginMode ? 1 : 0;
+                    let result = 0;
+
+                    if (key === 'PMT') {
+                        if (r === 0) {
+                            result = -(tvm.pv + tvm.fv) / tvm.n;
+                        } else {
+                            let discountFactor = (1 - Math.pow(1 + r, -tvm.n)) / r;
+                            let fvFactor = Math.pow(1 + r, -tvm.n);
+                            result = -(tvm.pv + tvm.fv * fvFactor) / (discountFactor * (1 + r * S));
+                        }
+                        tvm.pmt = result;
+                    } else if (key === 'PV') {
+                        if (r === 0) {
+                            result = -(tvm.pmt * tvm.n + tvm.fv);
+                        } else {
+                            let discountFactor = (1 - Math.pow(1 + r, -tvm.n)) / r;
+                            let fvFactor = Math.pow(1 + r, -tvm.n);
+                            result = - (tvm.pmt * discountFactor * (1 + r * S) + tvm.fv * fvFactor);
+                        }
+                        tvm.pv = result;
+                    } else if (key === 'FV') {
+                        if (r === 0) {
+                            result = -(tvm.pv + tvm.pmt * tvm.n);
+                        } else {
+                            let discountFactor = (1 - Math.pow(1 + r, -tvm.n)) / r;
+                            result = -(tvm.pv * Math.pow(1 + r, tvm.n) + tvm.pmt * discountFactor * (1 + r * S) * Math.pow(1 + r, tvm.n));
+                        }
+                        tvm.fv = result;
+                    } else if (key === 'n') {
+                        if (r === 0) {
+                            result = -(tvm.pv + tvm.fv) / tvm.pmt;
+                        } else {
+                            let pmtFactor = tvm.pmt * (1 + r * S) / r;
+                            let num = pmtFactor - tvm.fv;
+                            let den = tvm.pv + pmtFactor;
+                            result = Math.log(num / den) / Math.log(1 + r);
+                        }
+                        tvm.n = result;
+                    } else if (key === 'i') {
+                        // Resolução iterativa por Secante/Newton para a Taxa i
+                        let rate = 0.05;
+                        for (let iter = 0; iter < 100; iter++) {
+                            let discountFactor = (1 - Math.pow(1 + rate, -tvm.n)) / rate;
+                            let fvFactor = Math.pow(1 + rate, -tvm.n);
+                            let f = tvm.pv + tvm.pmt * discountFactor * (1 + rate * S) + tvm.fv * fvFactor;
+                            
+                            let dr = 0.0001;
+                            let r2 = rate + dr;
+                            let discountFactor2 = (1 - Math.pow(1 + r2, -tvm.n)) / r2;
+                            let fvFactor2 = Math.pow(1 + r2, -tvm.n);
+                            let f2 = tvm.pv + tvm.pmt * discountFactor2 * (1 + r2 * S) + tvm.fv * fvFactor2;
+                            
+                            let df = (f2 - f) / dr;
+                            let nextRate = rate - f / df;
+                            if (Math.abs(nextRate - rate) < 1e-7) { rate = nextRate; break; }
+                            rate = nextRate;
+                        }
+                        tvm.i = rate * 100;
+                        result = tvm.i;
+                    }
+
+                    if (liftEnabled) pushStack(result);
+                    else stack[0] = result;
+                    liftEnabled = true;
+                    renderDisplay(result);
+                }
+                return;
+            }
+
+            fMode = false;
+            gMode = false;
+            updateIndicators();
+        }
+
+        // --- Mapeamento do Teclado Físico ---
+        window.addEventListener('keydown', (e) => {
+            let key = e.key;
+
+            if (key >= '0' && key <= '9') pressKey(key);
+            else if (key === '.' || key === ',') pressKey('.');
+            else if (key === 'Enter') { e.preventDefault(); pressKey('ENTER'); }
+            else if (key === '+') pressKey('+');
+            else if (key === '-') pressKey('-');
+            else if (key === '*') pressKey('*');
+            else if (key === '/') { e.preventDefault(); pressKey('/'); }
+            else if (key === 'Backspace' || key === 'Delete') pressKey('CLX');
+            else if (key.toLowerCase() === 'f') pressKey('f');
+            else if (key.toLowerCase() === 'g') pressKey('g');
+            else if (key.toLowerCase() === 'n') pressKey('n');
+            else if (key.toLowerCase() === 'i') pressKey('i');
+            else if (key.toLowerCase() === 'p') pressKey('PV');
+            else if (key.toLowerCase() === 'm') pressKey('PMT');
+            else if (key.toLowerCase() === 'v') pressKey('FV');
+            else if (key.toLowerCase() === 'c') pressKey('CHS');
+        });
+
+        // Inicializa o Display em 0.00
+        renderDisplay();
+    </script>
+</body>
+</html>
+```
